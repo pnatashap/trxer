@@ -18,6 +18,10 @@ bld/
 
 # Roslyn cache directories
 *.ide/
+# Roslyn cache directories
+*.idea/
+# Roslyn cache directories
+*.vscode/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
