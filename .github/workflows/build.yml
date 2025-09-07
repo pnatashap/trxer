@@ -1,0 +1,35 @@
+name: Build and Test
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore TrxerConsole/TrxerConsole.csproj
+    
+    - name: Build
+      run: dotnet build TrxerConsole/TrxerConsole.csproj --no-restore --configuration Release
+    
+    - name: Test build output
+      run: |
+        if [ -f "TrxerConsole/bin/Release/net8.0/TrxerConsole.dll" ]; then
+          echo "Build successful - executable created"
+          ls -la TrxerConsole/bin/Release/net8.0/
+        else
+          echo "Build failed - executable not found"
+          exit 1
+        fi
