@@ -20,6 +20,10 @@ jobs:
             extension: '.exe'
           - runtime: 'linux-x64'
             extension: ''
+          - runtime: 'osx-x64'
+            extension: ''
+          - runtime: 'osx-arm64'
+            extension: ''
     
     steps:
     - uses: actions/checkout@v4
