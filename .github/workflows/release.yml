@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runtime: 'win-x64'
+            extension: '.exe'
+          - runtime: 'linux-x64'
+            extension: ''
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore TrxerConsole/TrxerConsole.csproj
+    
+    - name: Build and Publish Self-Contained Executable
+      run: |
+        dotnet publish TrxerConsole/TrxerConsole.csproj \
+          --configuration Release \
+          --runtime ${{ matrix.runtime }} \
+          --self-contained true \
+          --output ./publish/${{ matrix.runtime }} \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true
+    
+    - name: List published files
+      run: ls -la ./publish/${{ matrix.runtime }}/
+    
+    - name: Prepare release archive
+      run: |
+        cd ./publish/${{ matrix.runtime }}
+        if [ "${{ matrix.runtime }}" = "win-x64" ]; then
+          zip -r ../../trxer-${{ matrix.runtime }}.zip .
+        else
+          tar -czf ../../trxer-${{ matrix.runtime }}.tar.gz .
+        fi
+        cd ../..
+    
+    - name: Upload Release Asset
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./trxer-${{ matrix.runtime }}${{ matrix.runtime == 'win-x64' && '.zip' || '.tar.gz' }}
+        asset_name: trxer-${{ matrix.runtime }}${{ matrix.runtime == 'win-x64' && '.zip' || '.tar.gz' }}
+        asset_content_type: ${{ matrix.runtime == 'win-x64' && 'application/zip' || 'application/gzip' }}
+    
+    - name: Upload artifacts (manual dispatch)
+      if: github.event_name == 'workflow_dispatch'
+      uses: actions/upload-artifact@v4
+      with:
+        name: trxer-${{ matrix.runtime }}
+        path: ./trxer-${{ matrix.runtime }}${{ matrix.runtime == 'win-x64' && '.zip' || '.tar.gz' }}
